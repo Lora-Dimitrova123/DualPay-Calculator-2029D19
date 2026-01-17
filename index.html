@@ -3,136 +3,103 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DualPay – Ресто в две валути</title>
+<title>DualPay</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@600&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
 body {
   font-family: 'Montserrat', sans-serif;
-  background: #fff1f6;
-  min-height: 100vh;
-  overflow-x: hidden;
+  background:#fff1f6;
 }
-h1, h2 {
+h1, button {
   font-family: 'Comfortaa', cursive;
-}
-.glass {
-  backdrop-filter: blur(14px);
-  background: rgba(255,255,255,0.65);
-}
-.bg-symbol {
-  position: absolute;
-  font-size: 5rem;
-  opacity: 0.06;
-  animation: float 20s infinite linear;
-}
-@keyframes float {
-  0% { transform: translate(0,0) rotate(0deg) scale(1); }
-  50% { transform: translate(40px,-40px) rotate(12deg) scale(1.08); }
-  100% { transform: translate(0,0) rotate(0deg) scale(1); }
 }
 </style>
 </head>
 
-<body class="relative flex items-center justify-center p-4">
+<body class="min-h-screen flex flex-col items-center justify-between p-4">
 
-<!-- FULL BACKGROUND SYMBOL GRID -->
-<div class="fixed inset-0 pointer-events-none">
-  <div class="w-full h-full grid grid-cols-6 grid-rows-10">
-    <script>
-      for(let i=0;i<60;i++){
-        document.write(`<div class="flex items-center justify-center">
-          <span class="bg-symbol">${i%2===0?'€':'лв'}</span>
-        </div>`)
-      }
-    </script>
-  </div>
-</div>
-
-<!-- APP -->
-<div class="relative w-full max-w-md glass rounded-3xl shadow-2xl p-6 space-y-4 z-10">
-
-<!-- LOGO -->
-<div class="flex justify-center">
-  <div class="bg-green-300 rounded-xl px-4 py-2 text-white text-xl shadow font-bold">
-    € ⇄ лв
-  </div>
-</div>
+<div class="w-full max-w-sm space-y-4">
 
 <h1 class="text-center text-2xl text-pink-500">DualPay</h1>
+
+<!-- INSTALL BUTTON -->
+<button id="installBtn"
+  class="hidden w-full py-2 rounded-lg bg-green-200 text-white">
+  Инсталирай приложението
+</button>
 
 <!-- PRICE -->
 <div>
   <label class="text-sm font-semibold">Сума за плащане</label>
   <div class="flex gap-2">
-    <input id="price" type="number" class="flex-1 rounded-xl p-3 bg-yellow-100 outline-none" placeholder="0.00">
-    <select id="priceCurrency" class="rounded-xl p-3">
-      <option value="BGN">BGN</option>
-      <option value="EUR">EUR</option>
+    <input id="price" type="number"
+      class="flex-1 p-3 rounded-lg bg-yellow-100 outline-none"
+      placeholder="0.00">
+    <select id="priceCur" class="p-3 rounded-lg">
+      <option value="BGN">лв</option>
+      <option value="EUR">€</option>
     </select>
   </div>
 </div>
 
 <!-- PAID -->
-<div class="grid grid-cols-2 gap-2">
-  <input id="paidBGN" type="number" class="rounded-xl p-3" placeholder="Платено в лв">
-  <input id="paidEUR" type="number" class="rounded-xl p-3" placeholder="Платено в €">
+<div>
+  <label class="text-sm font-semibold">Платено</label>
+  <div class="grid grid-cols-2 gap-2">
+    <input id="paidBGN" type="number" class="p-3 rounded-lg" placeholder="лв">
+    <input id="paidEUR" type="number" class="p-3 rounded-lg" placeholder="€">
+  </div>
 </div>
 
-<!-- CALCULATE BUTTON -->
-<button onclick="calculate()" class="w-full bg-green-300 text-white py-3 rounded-xl shadow font-semibold active:scale-95 transition">
+<!-- CALCULATE -->
+<button onclick="calculate()"
+  class="w-full py-3 rounded-lg bg-green-300 text-white text-lg">
   Изчисли ресто
 </button>
 
 <!-- ERROR -->
-<div id="error" class="hidden bg-red-100 text-red-700 p-3 rounded-xl text-center">
+<div id="error"
+  class="hidden text-center text-red-700 bg-red-100 p-3 rounded-lg">
   Недостатъчна сума
 </div>
 
 <!-- RESULT -->
-<div id="result" class="hidden space-y-2 transition-all">
+<div id="result" class="hidden space-y-2 text-center">
   <div class="flex justify-center gap-2">
-    <button onclick="setChangeCurrency('BGN')" class="bg-green-200 px-4 py-1 rounded-full">BGN</button>
-    <button onclick="setChangeCurrency('EUR')" class="bg-green-200 px-4 py-1 rounded-full">EUR</button>
+    <button onclick="setMode('BGN')" class="px-4 py-1 rounded-full bg-green-200">лв</button>
+    <button onclick="setMode('EUR')" class="px-4 py-1 rounded-full bg-green-200">€</button>
   </div>
-  <div class="text-center text-xl font-semibold">
-    Ресто: <span id="changeMain"></span>
-  </div>
-  <div class="text-center text-sm text-gray-500">
-    (<span id="changeSecondary"></span>)
-  </div>
+  <div id="main" class="text-2xl font-semibold"></div>
+  <div id="secondary" class="text-sm text-gray-500"></div>
 </div>
 
-<!-- FOOTER -->
-<footer class="text-xs text-center text-gray-500 pt-4">
+</div>
+
+<footer class="text-xs text-gray-500 text-center mt-6">
   Курс: 1 EUR = 1.95583 BGN<br>
   © Лора Димитрова
 </footer>
-
-</div>
 
 <canvas id="icon" width="512" height="512" class="hidden"></canvas>
 
 <script>
 const rate = 1.95583;
-let changeCurrency = 'BGN';
+let mode = 'BGN';
 
+/* CALC */
 function calculate(){
-  const price = +document.getElementById('price').value;
-  const paidBGN = +document.getElementById('paidBGN').value;
-  const paidEUR = +document.getElementById('paidEUR').value;
-  const currency = document.getElementById('priceCurrency').value;
+  const price = +priceInput.value;
+  const paidB = +paidBGN.value;
+  const paidE = +paidEUR.value;
+  const cur = priceCur.value;
 
-  let priceBGN = currency === 'EUR' ? price * rate : price;
-  let totalPaidBGN = paidBGN + paidEUR * rate;
+  const priceBGN = cur==='EUR' ? price*rate : price;
+  const paidTotal = paidB + paidE*rate;
 
-  const error = document.getElementById('error');
-  const result = document.getElementById('result');
-
-  if(totalPaidBGN < priceBGN){
+  if(paidTotal < priceBGN){
     error.classList.remove('hidden');
     result.classList.add('hidden');
     return;
@@ -141,55 +108,78 @@ function calculate(){
   error.classList.add('hidden');
   result.classList.remove('hidden');
 
-  let changeBGN = totalPaidBGN - priceBGN;
-  let changeEUR = changeBGN / rate;
+  const bgn = paidTotal - priceBGN;
+  const eur = bgn / rate;
 
-  updateResult(changeBGN, changeEUR);
+  if(mode==='BGN'){
+    main.textContent = bgn.toFixed(2)+' лв';
+    secondary.textContent = eur.toFixed(2)+' €';
+  } else {
+    main.textContent = eur.toFixed(2)+' €';
+    secondary.textContent = bgn.toFixed(2)+' лв';
+  }
 }
 
-function setChangeCurrency(c){
-  changeCurrency = c;
-  calculate();
-}
+function setMode(m){ mode=m; calculate(); }
 
-function updateResult(bgn, eur){
-  document.getElementById('changeMain').textContent =
-    changeCurrency === 'BGN' ? bgn.toFixed(2)+' лв' : eur.toFixed(2)+' €';
-  document.getElementById('changeSecondary').textContent =
-    changeCurrency === 'BGN' ? eur.toFixed(2)+' €' : bgn.toFixed(2)+' лв';
-}
+const priceInput = price;
+const paidBGN = document.getElementById('paidBGN');
+const paidEUR = document.getElementById('paidEUR');
+const priceCur = document.getElementById('priceCur');
+const error = document.getElementById('error');
+const result = document.getElementById('result');
+const main = document.getElementById('main');
+const secondary = document.getElementById('secondary');
 
 /* ICON */
 const ctx = icon.getContext('2d');
-ctx.fillStyle = '#86efac';
+ctx.fillStyle='#86efac';
 ctx.fillRect(0,0,512,512);
-ctx.fillStyle = '#fff';
-ctx.font = 'bold 120px Comfortaa';
-ctx.textAlign = 'center';
-ctx.fillText('€ ⇄ лв',256,300);
+ctx.fillStyle='#fff';
+ctx.font='bold 120px Comfortaa';
+ctx.textAlign='center';
+ctx.fillText('€⇄лв',256,300);
 const iconURL = icon.toDataURL();
 
 /* MANIFEST */
 const manifest = {
-  name: "DualPay",
-  short_name: "DualPay",
-  start_url: ".",
-  display: "standalone",
-  background_color: "#fff1f6",
-  theme_color: "#86efac",
-  icons: [{src:iconURL,sizes:"512x512",type:"image/png"}]
+  name:'DualPay',
+  short_name:'DualPay',
+  start_url:'.',
+  display:'standalone',
+  background_color:'#fff1f6',
+  theme_color:'#86efac',
+  icons:[{src:iconURL,sizes:'512x512',type:'image/png'}]
 };
-const manifestURL = URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/json'}));
-const m = document.createElement('link');
-m.rel='manifest'; m.href=manifestURL;
-document.head.appendChild(m);
+const mURL = URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/json'}));
+const ml = document.createElement('link');
+ml.rel='manifest'; ml.href=mURL;
+document.head.appendChild(ml);
 
 /* SERVICE WORKER */
-const swBlob = new Blob([`
+const sw = new Blob([`
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('fetch',()=>{});
 `],{type:'text/javascript'});
-navigator.serviceWorker.register(URL.createObjectURL(swBlob));
+navigator.serviceWorker.register(URL.createObjectURL(sw));
+
+/* INSTALL PROMPT */
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.classList.remove('hidden');
+});
+
+installBtn.addEventListener('click', async () => {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.classList.add('hidden');
+});
 </script>
 
 </body>
