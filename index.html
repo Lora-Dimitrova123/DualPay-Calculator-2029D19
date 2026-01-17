@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DualPay – Ресто в две валути</title>
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@600&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: #fff1f6;
+  overflow-x: hidden;
+}
+h1, h2 {
+  font-family: 'Comfortaa', cursive;
+}
+.glass {
+  backdrop-filter: blur(14px);
+  background: rgba(255,255,255,0.65);
+}
+.float {
+  animation: float 18s infinite linear;
+}
+@keyframes float {
+  0% { transform: translate(0,0) rotate(0deg) scale(1); }
+  50% { transform: translate(30px, -40px) rotate(10deg) scale(1.05); }
+  100% { transform: translate(0,0) rotate(0deg) scale(1); }
+}
+</style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4 relative">
+
+<!-- Dynamic background -->
+<div class="absolute inset-0 overflow-hidden pointer-events-none">
+  <div class="grid grid-cols-6 gap-20 opacity-5 text-6xl text-pink-400">
+    <span class="float">€</span><span class="float">лв</span>
+    <span class="float">€</span><span class="float">лв</span>
+    <span class="float">€</span><span class="float">лв</span>
+  </div>
+</div>
+
+<!-- App -->
+<div class="relative w-full max-w-md glass rounded-3xl shadow-2xl p-6 space-y-4">
+
+<!-- Logo -->
+<div class="flex items-center justify-center">
+  <div class="bg-green-300 rounded-xl px-4 py-2 text-white text-xl font-bold shadow">
+    € ⇄ лв
+  </div>
+</div>
+
+<h1 class="text-center text-2xl text-pink-500">DualPay</h1>
+
+<!-- Amount -->
+<div>
+  <label class="text-sm font-semibold">Сума за плащане</label>
+  <div class="flex gap-2">
+    <input id="price" type="number" class="flex-1 rounded-xl p-3 bg-yellow-100 outline-none" placeholder="0.00">
+    <select id="priceCurrency" class="rounded-xl p-3">
+      <option value="BGN">BGN</option>
+      <option value="EUR">EUR</option>
+    </select>
+  </div>
+</div>
+
+<!-- Paid -->
+<div class="grid grid-cols-2 gap-2">
+  <input id="paidBGN" type="number" class="rounded-xl p-3" placeholder="Платено в лв">
+  <input id="paidEUR" type="number" class="rounded-xl p-3" placeholder="Платено в €">
+</div>
+
+<!-- Error -->
+<div id="error" class="hidden bg-red-100 text-red-700 p-3 rounded-xl text-center">
+Недостатъчна сума
+</div>
+
+<!-- Change -->
+<div id="result" class="hidden space-y-2 transition-all">
+  <div class="flex justify-center gap-2">
+    <button onclick="setChangeCurrency('BGN')" class="bg-green-200 px-4 py-1 rounded-full">BGN</button>
+    <button onclick="setChangeCurrency('EUR')" class="bg-green-200 px-4 py-1 rounded-full">EUR</button>
+  </div>
+  <div class="text-center text-xl font-semibold">
+    Ресто: <span id="changeMain"></span>
+  </div>
+  <div class="text-center text-sm text-gray-500">
+    (<span id="changeSecondary"></span>)
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="text-xs text-center text-gray-500 pt-4">
+  Курс: 1 EUR = 1.95583 BGN<br>
+  © Лора Димитрова
+</footer>
+
+</div>
+
+<canvas id="icon" width="512" height="512" class="hidden"></canvas>
+
+<script>
+const rate = 1.95583;
+let changeCurrency = 'BGN';
+
+function calculate() {
+  const price = +price.value;
+  const paidBGN = +paidBGNInput.value;
+  const paidEUR = +paidEURInput.value;
+
+  let priceBGN = priceCurrency.value === 'EUR' ? price * rate : price;
+  let totalPaidBGN = paidBGN + paidEUR * rate;
+
+  if (totalPaidBGN < priceBGN) {
+    error.classList.remove('hidden');
+    result.classList.add('hidden');
+    return;
+  }
+
+  error.classList.add('hidden');
+  result.classList.remove('hidden');
+
+  let changeBGN = totalPaidBGN - priceBGN;
+  let changeEUR = changeBGN / rate;
+
+  if (changeCurrency === 'BGN') {
+    changeMain.textContent = changeBGN.toFixed(2) + ' лв';
+    changeSecondary.textContent = changeEUR.toFixed(2) + ' €';
+  } else {
+    changeMain.textContent = changeEUR.toFixed(2) + ' €';
+    changeSecondary.textContent = changeBGN.toFixed(2) + ' лв';
+  }
+}
+
+function setChangeCurrency(c) {
+  changeCurrency = c;
+  calculate();
+}
+
+const price = document.getElementById('price');
+const priceCurrency = document.getElementById('priceCurrency');
+const paidBGNInput = document.getElementById('paidBGN');
+const paidEURInput = document.getElementById('paidEUR');
+const error = document.getElementById('error');
+const result = document.getElementById('result');
+const changeMain = document.getElementById('changeMain');
+const changeSecondary = document.getElementById('changeSecondary');
+
+[price, priceCurrency, paidBGNInput, paidEURInput].forEach(el =>
+  el.addEventListener('input', calculate)
+);
+
+// Canvas Icon
+const ctx = icon.getContext('2d');
+ctx.fillStyle = '#86efac';
+ctx.fillRect(0,0,512,512);
+ctx.fillStyle = '#fff';
+ctx.font = 'bold 120px Comfortaa';
+ctx.textAlign = 'center';
+ctx.fillText('€ ⇄ лв',256,300);
+
+const iconURL = icon.toDataURL();
+
+// Manifest via Blob
+const manifest = {
+  name: "DualPay",
+  short_name: "DualPay",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#fff1f6",
+  theme_color: "#86efac",
+  icons: [{ src: iconURL, sizes: "512x512", type: "image/png" }]
+};
+
+const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+const manifestURL = URL.createObjectURL(manifestBlob);
+const link = document.createElement('link');
+link.rel = 'manifest';
+link.href = manifestURL;
+document.head.appendChild(link);
+
+// Service Worker
+const swCode = `
+self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('fetch', e => {});
+`;
+const swBlob = new Blob([swCode], {type:'text/javascript'});
+navigator.serviceWorker.register(URL.createObjectURL(swBlob));
+</script>
+
+</body>
+</html>
